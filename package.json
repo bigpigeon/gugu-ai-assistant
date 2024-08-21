@@ -5,7 +5,7 @@
 	"name": "gugu-ai-assistant",
 	"displayName": "咕咕ai助手",
 	"description": "自己搞的ai自动补全玩具",
-	"version": "0.0.5",
+	"version": "0.0.6",
 	"publisher": "bigpigeon",
 	"repository": "https://github.com/bigpigeon/gugu-ai-assistant",
 	"engines": {
@@ -22,7 +22,11 @@
 		"onLanguage:css",
 		"onLanguage:scss",
 		"onLanguage:less",
-		"onLanguage:markdown"
+		"onLanguage:markdown",
+		"onLanguage:javascriptreact",
+		"onLanguage:typescriptreact",
+		"onLanguage:vue",
+		"onLanguage:vue-html"
 	],
 	"main": "./out/extension.js",
 	"contributes": {

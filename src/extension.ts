@@ -3,6 +3,7 @@ import { Range } from 'vscode';
 import "axios"
 import {source_temp,source_temp_end,ApiResponse} from "./source";
 import { url } from 'inspector';
+import * as path from 'path';
 
 export function activate(context: vscode.ExtensionContext) {
 	console.log('inline-completions demo started');
@@ -62,6 +63,10 @@ export function activate(context: vscode.ExtensionContext) {
 				case "scss":
 				case "less":
 				case "markdown":
+				case "javascriptreact":
+				case "typescriptreact":
+				case "vue":
+				case "vue-html":	
 					break
 				default:
 					return;
@@ -97,7 +102,7 @@ export function activate(context: vscode.ExtensionContext) {
 			try {
 				const startTime = Date.now();
 				let stop_token = ["func","package","import","type","/src/","#- coding: utf-8","```"]
-				let url = new URL("/chat/completions", url_prefix).href
+				let url = path.join(url_prefix,"/chat/completions")
 				const response = await fetch(url, {
 					method: 'POST',
 					body: JSON.stringify({
