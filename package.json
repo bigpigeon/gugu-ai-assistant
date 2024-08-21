@@ -1,0 +1,101 @@
+{
+	"enabledApiProposals": [
+		"inlineCompletionsAdditions"
+	],
+	"name": "gugu-ai-assistant",
+	"displayName": "咕咕ai助手",
+	"description": "自己搞的ai自动补全玩具",
+	"version": "0.0.4",
+	"publisher": "bigpigeon",
+	"repository": "",
+	"engines": {
+		"vscode": "^1.74.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onLanguage:go",
+		"onLanguage:javascript",
+		"onLanguage:typescript",
+		"onLanguage:html",
+		"onLanguage:css",
+		"onLanguage:scss",
+		"onLanguage:less",
+		"onLanguage:markdown"
+	],
+	"main": "./out/extension.js",
+	"contributes": {
+		"language": ["go", "javascript", "typescript", "html" ,"css", "scss", "less", "markdown"],
+		"commands": [
+			{
+				"command": "extension.inline-completion-settings",
+				"title": "My Inline Completion Demo Settings"
+			}
+		],
+		"menus": {
+			"editor/inlineCompletions/actions": [
+				{
+					"command": "extension.inline-completion-settings"
+				}
+			]
+		},
+		"configuration": {
+			"title": "gugu-ai-assistant",
+			"properties": {
+				"gugu-ai-assistant.api_key": {
+					"type": "string",
+					"default": "",
+					"description": "令牌"
+				},
+				"gugu-ai-assistant.model": {
+					"type": "string",
+					"default": "claude-3.5-sonnet-20240620",
+					"description": "模型"
+				},
+				"gugu-ai-assistant.url_prefix": {
+					"type": "string",
+					"default": "https://api.pangxie.link/v1",
+					"description": "api链接地址"
+				},
+				"gugu-ai-assistant.max_tokens": {
+					"type": "integer",
+					"default": 4096,
+					"description": "最大prompt"
+				},
+				"gugu-ai-assistant.temperature": {
+					"type": "number",
+					"default": 0.5,
+					"description": "温度"
+				},
+				"gugu-ai-assistant.allow_autotrigger": {
+					"type": "boolean",
+					"default": false,
+					"description": "允许自动触发"
+				},
+				"gugu-ai-assistant.autotrigger_delay_ms": {
+					"type": "integer",
+					"default": 500,
+					"description": "自动触发延迟，防止触发太过频繁"
+				}
+			}
+		}
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"lint": "eslint \"src/**/*.ts\"",
+		"watch": "tsc -watch -p ./",
+		"download-api": "dts dev",
+		"postinstall": "npm run download-api"
+	},
+	"devDependencies": {
+		"@types/node": "^18",
+		"@typescript-eslint/eslint-plugin": "^7.14.0",
+		"@typescript-eslint/parser": "^7.14.0",
+		"eslint": "^8.26.0",
+		"typescript": "^5.5.2",
+		"@vscode/dts": "^0.4.0",
+		"@types/vscode": "^1.74.0"
+	}
+}
