@@ -5,9 +5,9 @@
 	"name": "gugu-ai-assistant",
 	"displayName": "咕咕ai助手",
 	"description": "自己搞的ai自动补全玩具",
-	"version": "0.0.4",
+	"version": "0.0.5",
 	"publisher": "bigpigeon",
-	"repository": "",
+	"repository": "https://github.com/bigpigeon/gugu-ai-assistant",
 	"engines": {
 		"vscode": "^1.74.0"
 	},
