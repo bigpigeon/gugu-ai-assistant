@@ -7,6 +7,8 @@ import * as path from 'path';
 
 export function activate(context: vscode.ExtensionContext) {
 	console.log('inline-completions demo started');
+	let myStatusBarItem = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+    context.subscriptions.push(myStatusBarItem);
 	let outputChannel = vscode.window.createOutputChannel("gugu-ai-assistant");
 	let config = vscode.workspace.getConfiguration('gugu-ai-assistant');
 	let api_key = config.get('api_key');
@@ -19,6 +21,13 @@ export function activate(context: vscode.ExtensionContext) {
 	let counter:number = 0;
 	function delay(ms: number) {
 		return new Promise( resolve => setTimeout(resolve, ms) );
+	}
+	function showLoading() {
+		myStatusBarItem.text = "$(sync~spin) 咕咕生成中";
+		myStatusBarItem.show();
+	}
+	function hideLoading() {
+		myStatusBarItem.hide();
 	}
 	vscode.workspace.onDidChangeConfiguration(e => {
 		if (e.affectsConfiguration('gugu-ai-assistant.api_key')) {
@@ -66,7 +75,9 @@ export function activate(context: vscode.ExtensionContext) {
 				case "javascriptreact":
 				case "typescriptreact":
 				case "vue":
-				case "vue-html":	
+				case "vue-html":
+				case "rust":
+				case "python":
 					break
 				default:
 					return;
@@ -100,6 +111,7 @@ export function activate(context: vscode.ExtensionContext) {
 			let question = source_temp+code+source_temp_end;
 			
 			try {
+				showLoading()
 				const startTime = Date.now();
 				let stop_token = ["func","package","import","type","/src/","#- coding: utf-8","```"]
 				let url = path.join(url_prefix,"/chat/completions")
@@ -118,6 +130,7 @@ export function activate(context: vscode.ExtensionContext) {
 					headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer '+api_key} 
 				});
 				const endTime = Date.now();
+				hideLoading();
 				outputChannel.append(
 					"-----------------------------------------\n"+
 					"model: " + model+" max_tokens: " + max_tokens?.toString() + " temperature: "+temperature?.toString()+"\n"+
