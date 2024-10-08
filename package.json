@@ -5,7 +5,7 @@
 	"name": "gugu-ai-assistant",
 	"displayName": "咕咕ai助手",
 	"description": "自己搞的ai自动补全玩具",
-	"version": "0.0.8",
+	"version": "0.0.9",
 	"publisher": "bigpigeon",
 	"repository": "https://github.com/bigpigeon/gugu-ai-assistant",
 	"engines": {
@@ -28,7 +28,10 @@
 		"onLanguage:vue",
 		"onLanguage:vue-html",
 		"onLanguage:rust",
-		"onLanguage:python"
+		"onLanguage:python",
+		"onLanguage:scminput",
+		"scm.createSourceControl",
+		"onView:scm"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
@@ -37,6 +40,10 @@
 			{
 				"command": "extension.inline-completion-settings",
 				"title": "My Inline Completion Demo Settings"
+			},
+			{
+				"command": "gugu-ai-assistant.refresh",
+				"title": "Generate commit log"
 			}
 		],
 		"menus": {
@@ -83,6 +90,25 @@
 					"type": "integer",
 					"default": 500,
 					"description": "自动触发延迟，防止触发太过频繁"
+				},
+				"gugu-ai-assistant.git_diff_exclude": {
+					"type": "arrays",
+					"items": {
+						"type": "string"
+					},
+					"default": ["*.bin","*.jpg","*.png","*.drawio"],
+					"description": "在生成commit log时需要忽略的文件"
+				},
+				"gugu-ai-assistant.git_diff_file_maxlen": {
+					"type": "integer",
+					"default": 4096,
+					"description": "单个文件diff内容最大长度，超过则忽略"
+				},
+				"gugu-ai-assistant.git_log_language": {
+					"type": "string",
+					"enum":["中文","english"],
+					"default": ["中文"],
+					"description": "生成的提交日志的语言类型"
 				}
 			}
 		}
@@ -103,5 +129,8 @@
 		"typescript": "^5.5.2",
 		"@vscode/dts": "^0.4.0",
 		"@types/vscode": "^1.74.0"
-	}
+	},
+	"extensionDependencies": [
+		"vscode.git"
+	]
 }
