@@ -45,34 +45,45 @@ function removeCompletionTags(input: string): string {
 
 vscode.workspace.onDidChangeConfiguration(e => {
     if (e.affectsConfiguration('gugu-ai-assistant.api_key')) {
+        let config = vscode.workspace.getConfiguration('gugu-ai-assistant');
         api_key = config.get('api_key');
     }
     if (e.affectsConfiguration('gugu-ai-assistant.url_prefix')) {
+        let config = vscode.workspace.getConfiguration('gugu-ai-assistant');
         url_prefix = config.get('url_prefix') as string;
     }
     if (e.affectsConfiguration('gugu-ai-assistant.model')) {
+        let config = vscode.workspace.getConfiguration('gugu-ai-assistant');
         model = config.get('model');
     }
 
     if (e.affectsConfiguration('gugu-ai-assistant.max_tokens')) {
+        let config = vscode.workspace.getConfiguration('gugu-ai-assistant');
         max_tokens = config.get<number>('max_tokens');
     }
     if (e.affectsConfiguration('gugu-ai-assistant.temperature')) {
+        let config = vscode.workspace.getConfiguration('gugu-ai-assistant');
         temperature = config.get<number>('temperature');
     }
     if (e.affectsConfiguration('gugu-ai-assistant.allow_autotrigger')) {
+        let config = vscode.workspace.getConfiguration('gugu-ai-assistant');
         allow_autotrigger = config.get<boolean>('allow_autotrigger');
     }
     if (e.affectsConfiguration('gugu-ai-assistant.autotrigger_delay_ms')) {
+        let config = vscode.workspace.getConfiguration('gugu-ai-assistant');
         autotrigger_delay_ms = config.get<number>('autotrigger_delay_ms') as number;
     }
     if (e.affectsConfiguration('gugu-ai-assistant.git_diff_exclude')) {
+        let config = vscode.workspace.getConfiguration('gugu-ai-assistant');
         git_diff_exclude = config.get<string[]>('git_diff_exclude') as string[];
     }
     if (e.affectsConfiguration('gugu-ai-assistant.git_diff_file_maxlen')) {
+        let config = vscode.workspace.getConfiguration('gugu-ai-assistant');
         git_diff_file_maxlen = config.get<number>('git_diff_file_maxlen') as number;
     }
+    
     if (e.affectsConfiguration('gugu-ai-assistant.git_log_language')) {
+        let config = vscode.workspace.getConfiguration('gugu-ai-assistant');
         git_log_language = config.get('git_log_language') as string;
     }
 });
@@ -133,7 +144,7 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
             let difflog = await getDiff()
             if (difflog as string) {
                 let question_prefix = scm_source_temp
-                switch (git_log_language){
+                switch (git_log_language.trim()){
                     case "中文":
                         question_prefix = scm_cn_source_temp
                         break
