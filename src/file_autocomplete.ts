@@ -169,7 +169,7 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
         try {
             showLoading()
             const startTime = Date.now();
-            let stop_token = ["func", "package", "import", "type", "/src/", "#- coding: utf-8", "```"]
+            let stop_token = ["/src/", "#- coding: utf-8", "```"]
             let url = path.join(url_prefix, "/chat/completions")
             const response = await fetch(url, {
                 method: 'POST',
