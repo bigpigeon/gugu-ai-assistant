@@ -97,7 +97,7 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
 
     async provideInlineCompletionItems(
         document: vscode.TextDocument, position: vscode.Position, context: vscode.InlineCompletionContext, token: vscode.CancellationToken) {
-        outputChannel.append("document language type "+ document.languageId)
+        
             // context.triggerKind
         switch (document.languageId) {
             case "go":
@@ -128,10 +128,11 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
                 return;
             }
         }
-
+        
         if (curr != counter) {
             return;
         }
+        outputChannel.append("document language type "+ document.languageId)
 
         let question: string;
         const result: vscode.InlineCompletionList = {
@@ -143,7 +144,7 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
             let difflog = await getDiff()
             if (difflog as string) {
                 let question_prefix = scm_source_temp
-                switch (git_log_language.trim()){
+                switch ((git_log_language as string).trim()){
                     case "中文":
                         question_prefix = scm_cn_source_temp
                         break
@@ -196,12 +197,12 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
                 "请求内容: " + question
             )
             if (!response.ok) {
-                outputChannel.append("error not ok")
+                outputChannel.append("error not ok\n")
                
                 return;
             } 
             if (response.status >= 400) {
-                outputChannel.append('HTTP Error: ' + response.status.toString() + ' - ' + response.statusText);
+                outputChannel.append('HTTP Error: ' + response.status.toString() + ' - ' + response.statusText+"\n");
             }
             else {
                 let obj = await response.json() as ApiResponse
@@ -244,7 +245,7 @@ async function showDiffLog(): Promise<string | undefined> {
     // 获取当前工作区
     const workspaceFolders = vscode.workspace.workspaceFolders;
     if (!workspaceFolders) {
-        vscode.window.showInformationMessage('没有打开的工作区嘎！');
+        vscode.window.showInformationMessage('没有打开的工作区咕！');
         return;
     }
 
@@ -257,17 +258,17 @@ async function showDiffLog(): Promise<string | undefined> {
         return new Promise((resolve, reject) => {
             exec(`git diff HEAD `, { cwd: workspaceRoot }, (error, stdout, stderr) => {
                 if (error) {
-                    vscode.window.showErrorMessage(`执行 Git 命令时出错嘎：${error.message}`);
+                    vscode.window.showErrorMessage(`执行 Git 命令时出错咕：${error.message}`);
                     return;
                 }
 
                 if (stderr) {
-                    vscode.window.showErrorMessage(`Git 命令返回错误嘎：${stderr}`);
+                    vscode.window.showErrorMessage(`Git 命令返回错误咕：${stderr}`);
                     return;
                 }
 
                 if (!stdout) {
-                    vscode.window.showInformationMessage('没有 Git 修改嘎！');
+                    vscode.window.showInformationMessage('没有 Git 修改咕！');
                     return;
                 }
                 resolve(stdout)

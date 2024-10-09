@@ -106,8 +106,8 @@
 				},
 				"gugu-ai-assistant.git_log_language": {
 					"type": "string",
-					"enum":["中文","english"],
-					"default": ["中文"],
+					"enum":["english","中文"],
+					"default": "中文",
 					"description": "生成的提交日志的语言类型"
 				}
 			}
