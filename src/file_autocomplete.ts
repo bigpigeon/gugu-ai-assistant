@@ -97,7 +97,8 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
 
     async provideInlineCompletionItems(
         document: vscode.TextDocument, position: vscode.Position, context: vscode.InlineCompletionContext, token: vscode.CancellationToken) {
-        // context.triggerKind
+        outputChannel.append("document language type "+ document.languageId)
+            // context.triggerKind
         switch (document.languageId) {
             case "go":
             case "javascript":
@@ -126,8 +127,6 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
             } else {
                 return;
             }
-        } else {
-            console.log("trigger with manual")
         }
 
         if (curr != counter) {
@@ -197,10 +196,12 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
                 "请求内容: " + question
             )
             if (!response.ok) {
-                console.error("Error");
+                outputChannel.append("error not ok")
+               
                 return;
-            } else if (response.status >= 400) {
-                console.error('HTTP Error: ' + response.status.toString() + ' - ' + response.statusText);
+            } 
+            if (response.status >= 400) {
+                outputChannel.append('HTTP Error: ' + response.status.toString() + ' - ' + response.statusText);
             }
             else {
                 let obj = await response.json() as ApiResponse
