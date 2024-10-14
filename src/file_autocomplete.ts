@@ -115,6 +115,7 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
             case "rust":
             case "python":
             case "scminput":
+            case "git-commit":
                 break
             default:
                 return;
@@ -132,7 +133,7 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
         if (curr != counter) {
             return;
         }
-        outputChannel.append("document language type "+ document.languageId)
+        outputChannel.appendLine("document language type "+ document.languageId)
 
         let question: string;
         const result: vscode.InlineCompletionList = {
@@ -140,7 +141,7 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
             commands: [],
         };
         // let uri = document.uri.toJSON();
-        if (document.languageId == "scminput") {
+        if (document.languageId == "scminput" || document.languageId == "git-commit") {
             let difflog = await getDiff()
             if (difflog as string) {
                 let question_prefix = scm_source_temp
@@ -188,7 +189,7 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
             const endTime = Date.now();
             hideLoading();
 
-            outputChannel.append(
+            outputChannel.appendLine(
                 "-----------------------------------------\n" +
                 "model: " + model + " max_tokens: " + max_tokens?.toString() + " temperature: " + temperature?.toString() + "\n" +
                 "url: " + url + "\n" +
@@ -197,12 +198,12 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
                 "请求内容: " + question
             )
             if (!response.ok) {
-                outputChannel.append("error not ok\n")
+                outputChannel.appendLine("error not ok\n")
                
                 return;
             } 
             if (response.status >= 400) {
-                outputChannel.append('HTTP Error: ' + response.status.toString() + ' - ' + response.statusText+"\n");
+                outputChannel.appendLine('HTTP Error: ' + response.status.toString() + ' - ' + response.statusText+"\n");
             }
             else {
                 let obj = await response.json() as ApiResponse
@@ -320,7 +321,7 @@ async function getDiff(): Promise<string | undefined> {
             if (needIgnoreFile(ch.uri.fsPath)){
                 continue
             }
-            let diff = await repo.diffIndexWithHEAD(ch.uri.path)
+            let diff = await repo.diffIndexWithHEAD(ch.uri.fsPath)
             if (diff.length > git_diff_file_maxlen){
                 continue
             }
@@ -329,6 +330,7 @@ async function getDiff(): Promise<string | undefined> {
         return diffContent
         //  vscode.window.showInformationMessage(`检测到以下修改：\n${changesStr}`);
     }
+    
 
 }
 

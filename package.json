@@ -5,7 +5,7 @@
 	"name": "gugu-ai-assistant",
 	"displayName": "咕咕ai助手",
 	"description": "自己搞的ai自动补全玩具",
-	"version": "0.0.9",
+	"version": "0.1.0",
 	"publisher": "bigpigeon",
 	"repository": "https://github.com/bigpigeon/gugu-ai-assistant",
 	"engines": {
@@ -30,6 +30,7 @@
 		"onLanguage:rust",
 		"onLanguage:python",
 		"onLanguage:scminput",
+		"onLanguage:git-commit",
 		"scm.createSourceControl",
 		"onView:scm"
 	],

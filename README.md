@@ -17,7 +17,7 @@ press ctrl+shirt+p goto `Preferences: Configure RuntimeArguments`
 
 press ctrl+shirt+p goto `Preferences: Open Keyboard Shortcuts`
 
-add shortcut for `Trigger Inline Suggestion` command
+add shortcut for `InlineSuggest.trigger` command
 
 ### api config
 

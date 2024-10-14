@@ -11,6 +11,5 @@ export function activate(context: vscode.ExtensionContext) {
 	
     context.subscriptions.push(myStatusBarItem);
 	
-
 	vscode.languages.registerInlineCompletionItemProvider({ pattern: '**' }, new MyInlineCompletionProvider);
 }

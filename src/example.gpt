@@ -1,0 +1,189 @@
+你是一位资深程序开发者，我现在想请你帮忙在这个项目某个文件上填充一些代码
+代码包括上下文感知缩进（如果需要）。所有补全必须真实、准确、书写良好且正确。
+我会提供以下信息
+1. 该项目的所有文件信息
+2. 你需要填充的文件的文件名及文件内容
+我会在你需要填充内容的地方用{{FILL_HERE}}标注
+你的任务是填充{{FILL_HERE}}的内容
+如果缺少填充代码所需必要信息，你可以向我提问，提问方式仅限项目文件的内容,提问内容需要放入<Need></Need>中
+如果能直接填充则在<COMPLETION></COMPLETION>中返回需要的内容，不要进行任何解释
+下面开始举例
+
+# EXAMPLE1
+## EXAMPLE QUESTION
+
+<PROJECT_DIR>
+.:
+go.mod  lib  main.go
+
+./lib:
+lib.go
+</PROJECT_DIR>
+<FILE_FILL path="./main.go">
+package main
+
+import (
+	"fmt"
+	"main/lib"
+)
+
+func main() {
+	{
+		a := 100
+		b := 500
+		fmt.Println(lib.Sum(a, b))
+	}
+	{
+		a := 299
+		// call Fib
+        {{FILL_HERE}}
+	}
+}
+</FILE_FILL>
+
+
+## CORRECT COMPLETION
+
+<Need>
+    <FILE_1 path="./lib.go" />
+    <FILE_2 path="./lib2.go" />
+</Need>
+
+## EXAMPLE QUESTION2
+<Need>
+<FILE_1 path="./lib.go">
+package lib
+
+func Sum(a, b int) int {
+	return a + b
+}
+
+</FILE_1>
+<FILE_2 path="./lib2.go">
+package lib
+
+// fib function
+func Fib(n int) int {
+	if n <= 1 {
+		return n
+	}
+	return Fib(n-1) + Fib(n-2)
+}
+</FILE_2>
+</Need>
+## CORRECT COMPLETION2
+<COMPLETION>  fmt.Println(lib.Fib(a))</COMPLETION>
+----------
+现在我要向你提问
+<PROJECT_DIR>
+.:
+build  cmd  design  env  ginfullstack.sh  go.mod  go.sum  internal  README.md  script
+
+./build:
+Dockerfile  Dockerfile_local  docker_local_push.sh
+
+./cmd:
+hermes
+
+./cmd/hermes:
+config.yaml  hermes  main.go
+
+./design:
+design.drawio
+
+./env:
+proj_env
+
+./internal:
+api  conf  dao  dto  grpcmagic  route  sdk  sync  tools
+
+./internal/api:
+api_alertmanager.go       api_alert_rule_test.go    api_eval_rule.go       api_example.go      api_project.go       auth.go
+api_alert_rule_delete.go  api_alert_rule_upsert.go  api_eval_rule_test.go  api_msgtemplate.go  api_timeinterval.go  models
+api_alert_rule_get.go     api_contact.go            api_evaltype.go        api_perm.go         auditlog.go
+
+./internal/api/models:
+alertmanager.go  common.go   error.go  eval_rule.go  example.go            msgtemplate.go  project.go     time_interval.go
+alert_rule.go    contact.go  eval.go   evaltype.go   gen_proj_allinone.go  perm.go         tagfmt_gen.go
+
+./internal/conf:
+conf.go  tagfmt_gen.go
+
+./internal/dao:
+coll_alertmanager.go       coll_contact_test.go     coll_project_test.go       main_test.go     mongo.go       wire.go
+coll_alertmanager_test.go  coll_evaltarget.go       coll_timeinterval.go       manager.go       prometheus.go
+coll_alert_rule.go         coll_evaltarget_test.go  coll_timeinterval_test.go  manager_test.go  redis.go
+coll_contact.go            coll_project.go          coll_version.go            model_test.go    wire_gen.go
+
+./internal/dto:
+alertmanager.go      alert_rule.go       contact.go      msgtemplate.go  tagfmt_gen.go     traffic.go
+alert_rule_const.go  alert_rule_tree.go  eval_target.go  project.go      time_interval.go  version.go
+
+./internal/grpcmagic:
+client.go
+
+./internal/route:
+docs.go            generate_utils.go  route.go      swagger.md    validator.go  wire.go
+generate_route.go  monitor.go         swagger.json  swagger.yaml  wire_gen.go
+
+./internal/sdk:
+cloud_logging.go       hermes.go     http.go  kae_test.go  kcmdb_test.go  org_test.go     user_center.go
+cloud_logging_test.go  http_base.go  kae.go   kcmdb.go     org.go         secret_test.go
+
+./internal/sync:
+kae.go       kcmdb_sync.go       org_sync.go       sync_manager.go       usercenter_sync.go
+kae_test.go  kcmdb_sync_test.go  org_sync_test.go  sync_manager_test.go  usercenter_sync_test.go
+
+./internal/tools:
+context.go  error_test.go  json.go  map.go       retry.go    tree.go       utils.go
+error.go    io.go          list.go  map_test.go  strings.go  tree_test.go
+
+./script:
+alert_rule.js  mongo_index
+</PROJECT_DIR>
+<FILE_FILL path="./internal/dao/coll_version.go">
+package dao
+
+import (
+	"context"
+
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
+	"my_project/sre/hermes/internal/conf"
+	"my_project/sre/hermes/internal/dto"
+)
+
+const (
+	VersionDaoCollPrefix = "version"
+)
+
+type VersionDao struct {
+	mongoClient *mongo.Client
+	coll        *mongo.Collection
+}
+
+func NewVersionDao() *VersionDao {
+	client := GetMongodbClient()
+	db := client.Database(conf.G.Mongo.Db).Collection(VersionDaoCollPrefix)
+	projectDao := &VersionDao{
+		mongoClient: client,
+		coll:        db,
+	}
+    {{FILL_HERE}}
+	return projectDao
+}
+
+func (d *VersionDao) IncrVersion(ctx context.Context, kind string) (int, error) {
+	var version dto.VersionSpec
+	op := options.FindOneAndUpdate().SetUpsert(true)
+	err := d.coll.FindOneAndUpdate(ctx, bson.M{"_id": kind}, bson.M{
+		"$inc": bson.M{"version": 1},
+	}, op).Decode(&version)
+	if err != nil {
+		return 0, err
+	}
+	return version.Version, nil
+}
+
+</FILE_FILL>
