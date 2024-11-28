@@ -1,11 +1,14 @@
 import * as vscode from "vscode";
-import { source_temp, source_temp_end, ApiResponse } from "./file_source";
+import { source_temp, source_temp_end, ApiResponse, ApiMessage } from "./file_source";
+import { dir_temp } from "./dir_source";
 import { scm_cn_source_temp, scm_source_temp } from "./scm_source";
 import * as path from 'path';
 import { Range } from 'vscode';
 import { exec } from "child_process";
 import { rejects } from "assert";
+import { XMLParser,XMLBuilder } from 'fast-xml-parser';
 import { API as GitAPI, GitExtension, APIState } from './git';
+import { DOMParser } from 'xmldom';
 import {wildcardMatch} from "./wildcard";
 
 const util = require('util');
@@ -23,13 +26,14 @@ let autotrigger_delay_ms = config.get<number>('autotrigger_delay_ms') as number;
 let git_diff_exclude = config.get<string[]>('git_diff_exclude') as string[];
 let git_diff_file_maxlen = config.get<number>('git_diff_file_maxlen') as number;
 let git_log_language = config.get<string>('git_log_language') as string;
+let mode = config.get<string>("mode") as string 
 let counter: number = 0;
 
 function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
-function showLoading() {
-    myStatusBarItem.text = "$(sync~spin)咕~🕊️";
+function showLoading(n: number) {
+    myStatusBarItem.text = "$(sync~spin)"+"咕".repeat(n)+"~🕊️";
     myStatusBarItem.show();
 }
 function hideLoading() {
@@ -40,7 +44,7 @@ function insertSubstring(original: string, substring: string, index: number): st
     return original.slice(0, index) + substring + original.slice(index);
 }
 function removeCompletionTags(input: string): string {
-    return input.replace(/<COMPLETION>|<\/COMPLETION>/g, '');
+    return input.replace(/<COMPLETION>|<\/COMPLETION>/g, '').trimStart();
 }
 
 vscode.workspace.onDidChangeConfiguration(e => {
@@ -85,6 +89,10 @@ vscode.workspace.onDidChangeConfiguration(e => {
     if (e.affectsConfiguration('gugu-ai-assistant.git_log_language')) {
         let config = vscode.workspace.getConfiguration('gugu-ai-assistant');
         git_log_language = config.get('git_log_language') as string;
+    }
+    if (e.affectsConfiguration('gugu-ai-assistant.mode')) {
+        let config = vscode.workspace.getConfiguration('gugu-ai-assistant');
+        mode = config.get('mode') as string;
     }
 });
 
@@ -162,61 +170,50 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
             if (position.line <= 0) {
                 return;
             }
-            let code = document.getText()
-            code = insertSubstring(code, "{{FILL_HERE}}", document.offsetAt(position))
-            question = source_temp + code + source_temp_end;
+            switch (mode) {
+            case "single_file":{
+                let code = document.getText()
+                code = insertSubstring(code, "{{FILL_HERE}}", document.offsetAt(position))
+                question = source_temp + code + source_temp_end;
+                break;
+            }
+            case "current_dir":{
+                let curr_dir = path.dirname(document.uri.fsPath)           
+                let curr_rel_dir = vscode.workspace.asRelativePath(curr_dir)
+                let files = await vscode.workspace.findFiles(new vscode.RelativePattern(curr_dir, "*"))
+                
+                let file_paths = files.map(file => path.basename(file.fsPath))
+                let code = document.getText()
+                code = insertSubstring(code, "{{FILL_HERE}}", document.offsetAt(position))
+                let files_str = file_paths.join(" ")
+                let project_block = `<PROJECT_DIR>${curr_rel_dir}:\n${files_str}</PROJECT_DIR>\n`
+                let curr_fspath = vscode.workspace.asRelativePath(document.uri.fsPath)
+                let file_block = `<FILE_FILL path="${curr_fspath}">${code}</FILE_FILL>\n`
+
+                // get all files path relate by workspace path
+                
+                question = dir_temp + project_block + file_block
+                break;
+            }
+                
+            case "all_dir":{
+                question = ""
+                
+                break;
+            }
+            default:
+                return 
+            }
+           
         }
-
+       
         try {
-            showLoading()
-            const startTime = Date.now();
-            let stop_token = ["/src/", "#- coding: utf-8", "```"]
-            let url = path.join(url_prefix, "/chat/completions")
-            const response = await fetch(url, {
-                method: 'POST',
-                body: JSON.stringify({
-                    "model": model,
-                    "max_tokens": max_tokens,
-                    "temperature": temperature,
-                    "stop": stop_token,
-                    "messages": [{
-                        "role": "user",
-                        "content": question,
-                    }]
-                }),
-                headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + api_key }
+            let content = await this.firstAsk(question)
+            result.items.push({
+                insertText: content,
+                range: new Range(position.line, position.character, position.line, position.character + 1),
+                completeBracketPairs: false,
             });
-            const endTime = Date.now();
-            hideLoading();
-
-            outputChannel.appendLine(
-                "-----------------------------------------\n" +
-                "model: " + model + " max_tokens: " + max_tokens?.toString() + " temperature: " + temperature?.toString() + "\n" +
-                "url: " + url + "\n" +
-                "停止符: " + JSON.stringify(stop_token) + "\n" +
-                "请求耗时: " + (endTime - startTime).toString() + "ms\n" +
-                "请求内容: " + question
-            )
-            if (!response.ok) {
-                outputChannel.appendLine("error not ok\n")
-               
-                return;
-            } 
-            if (response.status >= 400) {
-                outputChannel.appendLine('HTTP Error: ' + response.status.toString() + ' - ' + response.statusText+"\n");
-            }
-            else {
-                let obj = await response.json() as ApiResponse
-                // let chooices: any[] = obj.choices
-                for (const v of obj.choices) {
-                    let content = removeCompletionTags(v.message.content)
-                    result.items.push({
-                        insertText: content,
-                        range: new Range(position.line, position.character, position.line, position.character + 1),
-                        completeBracketPairs: false,
-                    });
-                }
-            }
         }
         catch (error: any) {
             vscode.window.showErrorMessage(`API 请求失败：${error.message}`);
@@ -225,6 +222,87 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
 
         return result;
     }
+
+    async request(history: ApiMessage[],question: string, token: string):Promise<Response> {
+        const startTime = Date.now();
+        let stop_token:string[] = []
+        let url = path.join(url_prefix, "/chat/completions")
+        history.push({ "role": "user", "content": question })
+        const response = await fetch(url, {
+            method: 'POST',
+            body: JSON.stringify({
+                "model": model,
+                "max_tokens": max_tokens,
+                "temperature": temperature,
+                "stop": stop_token,
+                "messages": history,
+            }),
+            headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + api_key }
+        });
+        if (!response.ok) {
+            throw new Error(`API request failed with status ${response.status}`);
+        }
+        const endTime = Date.now();
+        outputChannel.appendLine(
+            "-----------------------------------------\n" +
+            "model: " + model + " max_tokens: " + max_tokens?.toString() + " temperature: " + temperature?.toString() + "\n" +
+            "url: " + url + "\n" +
+            "停止符: " + JSON.stringify(stop_token) + "\n" +
+            "请求耗时: " + (endTime - startTime).toString() + "ms\n" +
+            "请求内容: " + question
+        )
+        return response
+    }
+
+    async firstAsk(firstQuestion: string):Promise<string> {
+        let val = await this.tryContinueAsk([],firstQuestion, 1)
+        hideLoading()
+        return val
+    }
+
+    async tryContinueAsk(history: ApiMessage[], question: string, n: number):Promise<string> {
+        showLoading(n)
+        let response = await this.request(history,question, "")
+        let obj = await response.json() as ApiResponse
+        let ask = obj.choices[0].message.content
+        if (ask.startsWith("<Need>")) {
+            // parse xml with <Need><FILE_1 path="xxx"><...></Need>
+            // handle xml response
+            let parser = new XMLParser({
+                ignoreAttributes: false
+            });
+            let askJson = parser.parse(ask)
+            if (askJson["Need"] != null) {
+                let needObj = askJson["Need"] as any
+                for (let key in needObj) {
+                    let fileObj = needObj[key] as any
+                    // filepath is relative by workspace
+                    let filepath = fileObj["@_path"] as string 
+                    // convert to abs path
+                    let absFilePath = path.join(vscode.workspace.workspaceFolders![0].uri.fsPath, filepath)
+                    let fileContent = await vscode.workspace.fs.readFile(vscode.Uri.file(absFilePath))
+                    
+                    fileObj["#text"] = "\n"+ Buffer.from(fileContent).toString('utf8');
+                }
+            }
+            let builder = new XMLBuilder({
+                ignoreAttributes: false,
+                format: true
+            })
+            // encode xmlDoc to string 
+            let secondQuestion = builder.build(askJson)
+            history.push(obj.choices[0].message)
+            return await this.tryContinueAsk(history, secondQuestion,n+1)
+        } else if (ask.startsWith("<COMPLETION>")){
+            return removeCompletionTags(ask)
+        } else {
+            // throw error pannel
+            vscode.window.showErrorMessage(`API 返回格式错误：${ask}`);
+            throw new Error(`API 返回格式错误：${ask}`);
+        }
+    }
+    
+
 
     handleDidShowCompletionItem(completionItem: vscode.InlineCompletionItem): void {
         // console.log('handleDidShowCompletionItem');
