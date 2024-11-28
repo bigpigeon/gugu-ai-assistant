@@ -1,6 +1,5 @@
 import * as vscode from 'vscode';
 import { Range } from 'vscode';
-import "axios"
 import {source_temp,source_temp_end,ApiResponse} from "./file_source";
 import {MyInlineCompletionProvider,myStatusBarItem} from "./file_autocomplete";
 import { url } from 'inspector';

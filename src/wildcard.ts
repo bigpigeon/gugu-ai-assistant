@@ -19,7 +19,7 @@ export function wildcardMatch(pattern: string, str: string): boolean {
             .join('.')
         )
         .join('.*');
-
+    
     // 创建正则表达式对象
     const regex: RegExp = new RegExp(`^${regexPattern}$`);
 

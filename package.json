@@ -5,7 +5,7 @@
 	"name": "gugu-ai-assistant",
 	"displayName": "咕咕ai助手",
 	"description": "自己搞的ai自动补全玩具",
-	"version": "0.1.0",
+	"version": "0.1.1",
 	"publisher": "bigpigeon",
 	"repository": "https://github.com/bigpigeon/gugu-ai-assistant",
 	"engines": {
@@ -155,7 +155,6 @@
 		"@typescript-eslint/eslint-plugin": "^7.14.0",
 		"@typescript-eslint/parser": "^7.14.0",
 		"@vscode/dts": "^0.4.0",
-		"axios": "^1.7.8",
 		"eslint": "^8.26.0",
 		"typescript": "^5.5.2"
 	},

@@ -264,7 +264,7 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
         showLoading(n)
         let response = await this.request(history,question, "")
         let obj = await response.json() as ApiResponse
-        let ask = obj.choices[0].message.content
+        let ask = obj.choices[0].message.content.trim()
         if (ask.startsWith("<Need>")) {
             // parse xml with <Need><FILE_1 path="xxx"><...></Need>
             // handle xml response
