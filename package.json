@@ -136,6 +136,10 @@
 					],
 					"default": "single_file",
 					"description": "单文件就只会把当前文件告诉ai，否则则会把目录文件名也告诉ai,形成问答模式"
+				},
+				"gugu-ai-assistant.debug":{
+					"type":"boolean",
+					"default": false
 				}
 			}
 		}

@@ -116,5 +116,6 @@ export interface ApiResponse {
   create: string 
   choices: ApiChoice[]
   usage: ApiUsage
+  error: any
 }
 

@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { source_temp, source_temp_end, ApiResponse, ApiMessage } from "./file_source";
-import { dir_temp } from "./dir_source";
+import { dir_temp, tail_tips } from "./dir_source";
 import { scm_cn_source_temp, scm_source_temp } from "./scm_source";
 import * as path from 'path';
 import { Range } from 'vscode';
@@ -27,6 +27,7 @@ let git_diff_exclude = config.get<string[]>('git_diff_exclude') as string[];
 let git_diff_file_maxlen = config.get<number>('git_diff_file_maxlen') as number;
 let git_log_language = config.get<string>('git_log_language') as string;
 let mode = config.get<string>("mode") as string 
+let debug = config.get<boolean>("debug") as boolean 
 let counter: number = 0;
 
 function delay(ms: number) {
@@ -36,8 +37,32 @@ function showLoading(n: number) {
     myStatusBarItem.text = "$(sync~spin)"+"咕".repeat(n)+"~🕊️";
     myStatusBarItem.show();
 }
+
+function addFileToBarTooltip(name: string,filepath: string ) {
+    let tooltip = myStatusBarItem.tooltip as vscode.MarkdownString
+    if (tooltip.value == "") {
+        tooltip.appendMarkdown("uploaded file:")
+    }
+    tooltip.appendMarkdown(`
+
+[${name}](command:vscode.open?${encodeURIComponent(JSON.stringify(vscode.Uri.file(filepath)))})`)
+    myStatusBarItem.show();
+}
+
+function statusBarInit() {
+    myStatusBarItem.text = "🕊️"
+    if (!myStatusBarItem.tooltip) {
+        myStatusBarItem.tooltip = new vscode.MarkdownString("")
+        myStatusBarItem.tooltip.isTrusted = true
+    }
+    (myStatusBarItem.tooltip as vscode.MarkdownString).value = ""
+    
+    myStatusBarItem.show();
+}
+
 function hideLoading() {
-    myStatusBarItem.hide();
+    myStatusBarItem.text = "🕊️"
+    myStatusBarItem.show();
 }
 
 function insertSubstring(original: string, substring: string, index: number): string {
@@ -94,13 +119,17 @@ vscode.workspace.onDidChangeConfiguration(e => {
         let config = vscode.workspace.getConfiguration('gugu-ai-assistant');
         mode = config.get('mode') as string;
     }
+    if (e.affectsConfiguration('gugu-ai-assistant.debug')) {
+        let config = vscode.workspace.getConfiguration('gugu-ai-assistant');
+        debug = config.get('debug') as boolean;
+    }
 });
 
 
 
 export class MyInlineCompletionProvider implements vscode.InlineCompletionItemProvider {
     constructor() {
-
+        statusBarInit()
     }
 
     async provideInlineCompletionItems(
@@ -170,6 +199,7 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
             if (position.line <= 0) {
                 return;
             }
+            statusBarInit()
             switch (mode) {
             case "single_file":{
                 let code = document.getText()
@@ -178,21 +208,23 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
                 break;
             }
             case "current_dir":{
-                let curr_dir = path.dirname(document.uri.fsPath)           
+                let curr_dir = path.dirname(document.uri.fsPath)          
                 let curr_rel_dir = vscode.workspace.asRelativePath(curr_dir)
                 let files = await vscode.workspace.findFiles(new vscode.RelativePattern(curr_dir, "*"))
                 
                 let file_paths = files.map(file => path.basename(file.fsPath))
                 let code = document.getText()
+                
                 code = insertSubstring(code, "{{FILL_HERE}}", document.offsetAt(position))
                 let files_str = file_paths.join(" ")
                 let project_block = `<PROJECT_DIR>${curr_rel_dir}:\n${files_str}</PROJECT_DIR>\n`
                 let curr_fspath = vscode.workspace.asRelativePath(document.uri.fsPath)
+                addFileToBarTooltip(curr_fspath,document.uri.fsPath)
                 let file_block = `<FILE_FILL path="${curr_fspath}">${code}</FILE_FILL>\n`
 
                 // get all files path relate by workspace path
                 
-                question = dir_temp + project_block + file_block
+                question = dir_temp + project_block + file_block + tail_tips
                 break;
             }
                 
@@ -204,21 +236,27 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
             default:
                 return 
             }
-           
         }
        
         try {
             let content = await this.firstAsk(question)
-            result.items.push({
-                insertText: content,
-                range: new Range(position.line, position.character, position.line, position.character + 1),
-                completeBracketPairs: false,
-            });
+            if (content == "") {
+                vscode.window.showInformationMessage(`无需填充任何代码`);
+            }else {
+                result.items.push({
+                    insertText: content,
+                    range: new Range(position.line, position.character, position.line, position.character + 1),
+                    completeBracketPairs: false,
+                });
+            }
         }
         catch (error: any) {
             vscode.window.showErrorMessage(`API 请求失败：${error.message}`);
             throw error;
+        } finally {
+            hideLoading()
         }
+        
 
         return result;
     }
@@ -239,9 +277,14 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
             }),
             headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + api_key }
         });
-        if (!response.ok) {
+        if (response.status !== 200) {
+            let obj = await response.json()
+            outputChannel.appendLine(
+                "错误返回:"+ JSON.stringify(obj, null, 2)
+            )
             throw new Error(`API request failed with status ${response.status}`);
         }
+
         const endTime = Date.now();
         outputChannel.appendLine(
             "-----------------------------------------\n" +
@@ -256,7 +299,6 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
 
     async firstAsk(firstQuestion: string):Promise<string> {
         let val = await this.tryContinueAsk([],firstQuestion, 1)
-        hideLoading()
         return val
     }
 
@@ -264,7 +306,15 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
         showLoading(n)
         let response = await this.request(history,question, "")
         let obj = await response.json() as ApiResponse
+        if (debug) {
+            outputChannel.appendLine(
+                "gpt返回:"+ JSON.stringify(obj, null, 2)
+            )
+        }
         let ask = obj.choices[0].message.content.trim()
+        outputChannel.appendLine(
+            "回答: "+ask,
+        )
         if (ask.startsWith("<Need>")) {
             // parse xml with <Need><FILE_1 path="xxx"><...></Need>
             // handle xml response
@@ -281,7 +331,7 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
                     // convert to abs path
                     let absFilePath = path.join(vscode.workspace.workspaceFolders![0].uri.fsPath, filepath)
                     let fileContent = await vscode.workspace.fs.readFile(vscode.Uri.file(absFilePath))
-                    
+                    addFileToBarTooltip(filepath,absFilePath)
                     fileObj["#text"] = "\n"+ Buffer.from(fileContent).toString('utf8');
                 }
             }
@@ -297,12 +347,9 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
             return removeCompletionTags(ask)
         } else {
             // throw error pannel
-            vscode.window.showErrorMessage(`API 返回格式错误：${ask}`);
             throw new Error(`API 返回格式错误：${ask}`);
         }
     }
-    
-
 
     handleDidShowCompletionItem(completionItem: vscode.InlineCompletionItem): void {
         // console.log('handleDidShowCompletionItem');
