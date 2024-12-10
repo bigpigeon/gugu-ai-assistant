@@ -14,6 +14,7 @@
 	"categories": [
 		"Other"
 	],
+	
 	"activationEvents": [
 		"onLanguage:go",
 		"onLanguage:javascript",
@@ -31,11 +32,19 @@
 		"onLanguage:python",
 		"onLanguage:scminput",
 		"onLanguage:git-commit",
+		"onLanguage:lua",
+		"onLanguage:shellscript",
 		"scm.createSourceControl",
 		"onView:scm"
 	],
 	"main": "./out/extension.js",
 	"contributes": {
+		"keybindings":[
+			{
+				"command": "editor.action.inlineSuggest.trigger",
+				"key": "ctrl+'"
+			}
+		],
 		"language": [
 			"go",
 			"javascript",
@@ -81,11 +90,7 @@
 					"default": "https://api.pangxie.link/v1",
 					"description": "api链接地址"
 				},
-				"gugu-ai-assistant.max_tokens": {
-					"type": "integer",
-					"default": 4096,
-					"description": "最大prompt"
-				},
+				
 				"gugu-ai-assistant.temperature": {
 					"type": "number",
 					"default": 0.5,
@@ -118,6 +123,11 @@
 					"type": "integer",
 					"default": 4096,
 					"description": "单个文件diff内容最大长度，超过则忽略"
+				},
+				"gugu-ai-assistant.vegetable_pigeon": {
+					"type": "boolean",
+					"default": false,
+					"description": "gpt会像新手菜鸽一样帮你补全代码"
 				},
 				"gugu-ai-assistant.git_log_language": {
 					"type": "string",

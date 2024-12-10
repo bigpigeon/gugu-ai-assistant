@@ -1,6 +1,6 @@
 import * as vscode from "vscode";
 import { source_temp, source_temp_end, ApiResponse, ApiMessage } from "./file_source";
-import { dir_temp, tail_tips } from "./dir_source";
+import { dir_temp, tail_tips,rookie_role,senior_role,file_notfound_tip } from "./dir_source";
 import { scm_cn_source_temp, scm_source_temp } from "./scm_source";
 import * as path from 'path';
 import { Range } from 'vscode';
@@ -19,7 +19,7 @@ let config = vscode.workspace.getConfiguration('gugu-ai-assistant');
 let api_key = config.get('api_key');
 let url_prefix = config.get('url_prefix') as string;
 let model = config.get('model');
-let max_tokens = config.get<number>('max_tokens');
+let max_tokens = 4096;
 let temperature = config.get<number>('temperature');
 let allow_autotrigger = config.get<boolean>('allow_autotrigger');
 let autotrigger_delay_ms = config.get<number>('autotrigger_delay_ms') as number;
@@ -28,6 +28,7 @@ let git_diff_file_maxlen = config.get<number>('git_diff_file_maxlen') as number;
 let git_log_language = config.get<string>('git_log_language') as string;
 let mode = config.get<string>("mode") as string 
 let debug = config.get<boolean>("debug") as boolean 
+let vegetable_pigeon = config.get<boolean>("vegetable_pigeon") as boolean
 let counter: number = 0;
 
 function delay(ms: number) {
@@ -38,15 +39,25 @@ function showLoading(n: number) {
     myStatusBarItem.show();
 }
 
-function addFileToBarTooltip(name: string,filepath: string ) {
-    let tooltip = myStatusBarItem.tooltip as vscode.MarkdownString
-    if (tooltip.value == "") {
-        tooltip.appendMarkdown("uploaded file:")
-    }
-    tooltip.appendMarkdown(`
+function addFileToBarTooltip(name: string,filepath: string,exist: boolean) {
+    if (exist) {
+        let tooltip = myStatusBarItem.tooltip as vscode.MarkdownString
+        if (tooltip.value == "") {
+            tooltip.appendMarkdown("uploaded file:")
+        }
+        tooltip.appendMarkdown(`
 
 [${name}](command:vscode.open?${encodeURIComponent(JSON.stringify(vscode.Uri.file(filepath)))})`)
-    myStatusBarItem.show();
+        myStatusBarItem.show();
+    } else {
+        let tooltip = myStatusBarItem.tooltip as vscode.MarkdownString
+        if (tooltip.value == "") {
+            tooltip.appendMarkdown("uploaded file:")
+        }
+        tooltip.appendMarkdown("\n\n$(extensions-warning-message)"+name)
+        myStatusBarItem.show();
+    }
+   
 }
 
 function statusBarInit() {
@@ -86,10 +97,6 @@ vscode.workspace.onDidChangeConfiguration(e => {
         model = config.get('model');
     }
 
-    if (e.affectsConfiguration('gugu-ai-assistant.max_tokens')) {
-        let config = vscode.workspace.getConfiguration('gugu-ai-assistant');
-        max_tokens = config.get<number>('max_tokens');
-    }
     if (e.affectsConfiguration('gugu-ai-assistant.temperature')) {
         let config = vscode.workspace.getConfiguration('gugu-ai-assistant');
         temperature = config.get<number>('temperature');
@@ -123,6 +130,10 @@ vscode.workspace.onDidChangeConfiguration(e => {
         let config = vscode.workspace.getConfiguration('gugu-ai-assistant');
         debug = config.get('debug') as boolean;
     }
+    if (e.affectsConfiguration('gugu-ai-assistant.vegetable_pigeon')) {
+        let config = vscode.workspace.getConfiguration('gugu-ai-assistant');
+        vegetable_pigeon = config.get('vegetable_pigeon') as boolean;
+    }
 });
 
 
@@ -153,6 +164,8 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
             case "python":
             case "scminput":
             case "git-commit":
+            case "lua":
+            case "shellscript":
                 break
             default:
                 return;
@@ -219,12 +232,17 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
                 let files_str = file_paths.join(" ")
                 let project_block = `<PROJECT_DIR>${curr_rel_dir}:\n${files_str}</PROJECT_DIR>\n`
                 let curr_fspath = vscode.workspace.asRelativePath(document.uri.fsPath)
-                addFileToBarTooltip(curr_fspath,document.uri.fsPath)
+                addFileToBarTooltip(curr_fspath,document.uri.fsPath,true)
                 let file_block = `<FILE_FILL path="${curr_fspath}">${code}</FILE_FILL>\n`
 
                 // get all files path relate by workspace path
+                if (vegetable_pigeon) {
+                    question = rookie_role + dir_temp + project_block + file_block + tail_tips
+                } else {
+                    question = senior_role + dir_temp + project_block + file_block + tail_tips
+                }
                 
-                question = dir_temp + project_block + file_block + tail_tips
+                
                 break;
             }
                 
@@ -330,9 +348,16 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
                     let filepath = fileObj["@_path"] as string 
                     // convert to abs path
                     let absFilePath = path.join(vscode.workspace.workspaceFolders![0].uri.fsPath, filepath)
-                    let fileContent = await vscode.workspace.fs.readFile(vscode.Uri.file(absFilePath))
-                    addFileToBarTooltip(filepath,absFilePath)
-                    fileObj["#text"] = "\n"+ Buffer.from(fileContent).toString('utf8');
+                    
+                    // check file exist
+                    if (await checkFileExists(vscode.Uri.file(absFilePath))) {
+                        let fileContent = await vscode.workspace.fs.readFile(vscode.Uri.file(absFilePath))
+                        addFileToBarTooltip(filepath,absFilePath,true)
+                        fileObj["#text"] = "\n"+ Buffer.from(fileContent).toString('utf8');
+                    } else {
+                        fileObj["#text"] = file_notfound_tip
+                        addFileToBarTooltip(filepath,absFilePath,false)       
+                    }
                 }
             }
             let builder = new XMLBuilder({
@@ -364,6 +389,23 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
         info: vscode.PartialAcceptInfo | number
     ): void {
         // console.log('handleDidPartiallyAcceptCompletionItem');
+    }
+    
+}
+
+async function checkFileExists(uri: vscode.Uri): Promise<boolean> {
+    try {
+        // 调用 stat 来检查文件
+        await vscode.workspace.fs.stat(uri);
+        return true; // 如果能正常执行到这里，说明文件存在
+    } catch (error) {
+        if (error instanceof vscode.FileSystemError && error.code === 'FileNotFound') {
+            // 捕获文件未找到的错误
+            return false;
+        } else {
+            // 其他未知错误，重新抛出
+            throw error;
+        }
     }
 }
 

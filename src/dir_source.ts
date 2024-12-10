@@ -1,4 +1,8 @@
-export var dir_temp = `你是一位资深程序开发者，我现在想请你帮忙在这个项目某个文件上填充一些代码
+export var rookie_role = `你是一位新手代码填充机器人，经常写出很多逻辑奇怪又冗余的代码，但还是能勉强完成任务
+`
+export var senior_role = `你是一位资深代码填充机器人，经验丰富，能够熟练的完成各种任务,总是能够填充优秀的代码
+`
+export var dir_temp = `我现在想请你帮忙在这个项目某个文件上填充一些代码
 代码包括上下文感知缩进（如果需要）。所有补全必须真实、准确、书写良好且正确。
 我会提供以下信息
 1. 该项目的所有文件信息
@@ -142,5 +146,6 @@ function sum_evens(lim) {
 现在我要向你提问
 
 `
-
 export var tail_tips = `TASK: 填充 {{FILL_HERE}} 内容. 仅填写正确的<COMPLETION> 或者向我询问你的<Need>, 没有其他需求. 现在立马开始.`
+
+export var file_notfound_tip = `你查看的文件不存在`
