@@ -35,7 +35,7 @@ function delay(ms: number) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 function showLoading(n: number) {
-    myStatusBarItem.text = "$(sync~spin)"+"咕".repeat(n)+"~🕊️";
+    myStatusBarItem.text = "$(sync~spin)"+"咕".repeat(n)+"<$(issues)";
     myStatusBarItem.show();
 }
 
@@ -57,11 +57,10 @@ function addFileToBarTooltip(name: string,filepath: string,exist: boolean) {
         tooltip.appendMarkdown("\n\n$(extensions-warning-message)"+name)
         myStatusBarItem.show();
     }
-   
 }
 
 function statusBarInit() {
-    myStatusBarItem.text = "🕊️"
+    myStatusBarItem.text = "<$(issues)"
     if (!myStatusBarItem.tooltip) {
         myStatusBarItem.tooltip = new vscode.MarkdownString("")
         myStatusBarItem.tooltip.isTrusted = true
@@ -72,7 +71,12 @@ function statusBarInit() {
 }
 
 function hideLoading() {
-    myStatusBarItem.text = "🕊️"
+    myStatusBarItem.text = "<$(issues)"
+    myStatusBarItem.show();
+}
+
+function errorLoading() {
+    myStatusBarItem.text = "<$(stop)"
     myStatusBarItem.show();
 }
 
@@ -266,13 +270,13 @@ export class MyInlineCompletionProvider implements vscode.InlineCompletionItemPr
                     range: new Range(position.line, position.character, position.line, position.character + 1),
                     completeBracketPairs: false,
                 });
+                hideLoading();
             }
         }
         catch (error: any) {
             vscode.window.showErrorMessage(`API 请求失败：${error.message}`);
+            errorLoading();
             throw error;
-        } finally {
-            hideLoading()
         }
         
 
